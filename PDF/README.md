@@ -1,1 +1,1 @@
-PDF del informe 
+Informe de la tarea en formato pdf.
