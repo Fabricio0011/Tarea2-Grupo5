@@ -1,3 +1,4 @@
+//Codigo en MicroC PRO for PIC
 void main() {
     ANSEL  = 0;           // Desactivar canales analógicos
     ANSELH = 0;
