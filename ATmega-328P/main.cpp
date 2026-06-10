@@ -92,7 +92,7 @@ unsigned char mensaje_champion[72]={
 0xFF,0x01,0x01,0x39,0x39,0x0F,0x0F,0xFF, //P
 0xFF,0x99,0x99,0x81,0x81,0x99,0x99,0xFF, //I
 0xFF,0xC3,0x99,0xBD,0xBD,0x99,0xC3,0xFF, //O
-0xFF,0x81,0x81,0xF3,0xE7,0x81,0x81,0xFF, //N
+0xFF,0x81,0x81,0xF3,0xE7,0x81,0x81,0xFF, //ON
 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF //espacio
 };
 uint8_t secuencia[6];
@@ -102,23 +102,24 @@ uint8_t ronda = 1;
 uint8_t dificultad = 1;
 uint16_t velocidad = 700;
 
+// Función para enviar los comandos binarios por PC4 y PC5
+void enviar_sonido(uint8_t comando) {
+    PORTC = (PORTC & 0xCF) | ((comando & 0x03) << 4);
+    _delay_ms(30);                     // Retardo para que el PIC estabilice la lectura
+    PORTC &= ~(1<<PC4) & ~(1<<PC5);    // Retorna las líneas a 0 (Silencio)
+}
+
 void generar_secuencia(){
     uint8_t ultimo = 0;
-
     for(uint8_t i=0; i<6; i++){
-
         do{
             secuencia[i] = (rand() % 4) + 1;
-        }
-        while(secuencia[i] == ultimo);
-
+        }while(secuencia[i] == ultimo);
         ultimo = secuencia[i];
-
         _delay_ms(5);
     }
 }
 
-//---------------------------------------------
 void mostrarMatriz(int tam, const unsigned char *imagen){
     if(tam > 8){
       for(int i=0; i<tam-8; i++){
@@ -142,54 +143,39 @@ void mostrarMatriz(int tam, const unsigned char *imagen){
     }
 }
 
-//---------------------------------------------
 void pausa(uint16_t tiempo){
     while(tiempo--){
       _delay_ms(1);
     }
 }
 
-//--------------------------------------
 void seleccionar_dificultad(){
-
     while(1){
-
         if(!(PINC & (1<<PC0))){
             srand(TCNT0);
-
             dificultad = 1;
             velocidad = 200;
-
+            enviar_sonido(1); // SONIDO: Click al seleccionar dificultad
             mostrarMatriz(48,mensaje_facil);
-
             while(!(PINC & (1<<PC0)));
-
             break;
         }
-
         if(!(PINC & (1<<PC1))){
             srand(TCNT0);
-
             dificultad = 2;
             velocidad = 100;
-
+            enviar_sonido(1); // SONIDO: Click al seleccionar dificultad
             mostrarMatriz(48,mensaje_medio);
-
             while(!(PINC & (1<<PC1)));
-
             break;
         }
-
         if(!(PINC & (1<<PC3))){
             srand(TCNT0);
-
             dificultad = 3;
             velocidad = 50;
-
+            enviar_sonido(1); // SONIDO: Click al seleccionar dificultad
             mostrarMatriz(64,mensaje_dificil);
-
             while(!(PINC & (1<<PC3)));
-
             break;
         }
     }
@@ -205,26 +191,15 @@ void mostrar_patron(unsigned char patron[8]){
     }
 }
 
-
 void mostrar_secuencia(uint8_t cantidad){
     for(uint8_t i=0; i<cantidad; i++){
         switch(secuencia[i]){
-            case ARRIBA:
-                mostrar_patron(flecha_arriba);
-                break;
-
-            case ABAJO:
-                mostrar_patron(flecha_abajo);
-                break;
-
-            case IZQUIERDA:
-                mostrar_patron(flecha_izquierda);
-                break;
-
-            case DERECHA:
-                mostrar_patron(flecha_derecha);
-                break;
+            case ARRIBA:    mostrar_patron(flecha_arriba);    break;
+            case ABAJO:     mostrar_patron(flecha_abajo);     break;
+            case IZQUIERDA: mostrar_patron(flecha_izquierda); break;
+            case DERECHA:   mostrar_patron(flecha_derecha);   break;
         }
+        enviar_sonido(1); // SONIDO: Click durante el paso automático de la secuencia
         pausa(velocidad);
     }
 }
@@ -235,34 +210,33 @@ uint8_t verificar(uint8_t cantidad){
             return 0;
         }
     }
-
     return 1;
 }
 
 int main(){
-
-  DDRB = 0xFF; //configuramos como salida al puerto B
-  DDRD = 0XFF; //configuramos como salida al puerto D
+  DDRB = 0xFF; 
+  DDRD = 0XFF; 
+  DDRC |= (1<<PC4) | (1<<PC5); // PC4 y PC5 configurados como salidas para audio
+  
   TCCR0B = (1<<CS00);
   PORTC |= (1<<PC0);
   PORTC |= (1<<PC1);
   PORTC |= (1<<PC2);
   PORTC |= (1<<PC3);
 
+  enviar_sonido(3); // SONIDO: Marcha de START inicial
   mostrarMatriz(128, mensaje_start);
-
   seleccionar_dificultad();
-
   generar_secuencia();
 
   while(1){
-
     mostrar_secuencia(ronda);
     uint8_t indice = 0;
     while(indice < ronda){
       if(!(PINC & (1<<PC0))){
         respuesta[indice] = ARRIBA;
         indice++;
+        enviar_sonido(1); // SONIDO: Click al ingresar el botón
         mostrar_patron(flecha_arriba);
         while(!(PINC & (1<<PC0)));
         _delay_ms(100);
@@ -270,6 +244,7 @@ int main(){
       else if(!(PINC & (1<<PC1))){
         respuesta[indice] = ABAJO;
         indice++;
+        enviar_sonido(1); // SONIDO: Click al ingresar el botón
         mostrar_patron(flecha_abajo);
         while(!(PINC & (1<<PC1)));
         _delay_ms(100);
@@ -277,6 +252,7 @@ int main(){
       else if(!(PINC & (1<<PC2))){
         respuesta[indice] = IZQUIERDA;
         indice++;
+        enviar_sonido(1); // SONIDO: Click al ingresar el botón
         mostrar_patron(flecha_izquierda);
         while(!(PINC & (1<<PC2)));
         _delay_ms(100);
@@ -284,36 +260,42 @@ int main(){
       else if(!(PINC & (1<<PC3))){
         respuesta[indice] = DERECHA;
         indice++;
+        enviar_sonido(1); // SONIDO: Click al ingresar el botón
         mostrar_patron(flecha_derecha);        
         while(!(PINC & (1<<PC3)));
         _delay_ms(100);
       }
     }
     if(verificar(ronda)){
-      mostrar_patron(correcto);
       if(ronda<6){
+        mostrar_patron(correcto);
         ronda++;
       }
       else{
+        enviar_sonido(3); // SONIDO: ¡GANÓ EL JUEGO COMPLETO!
+        mostrar_patron(correcto);
         mostrarMatriz(72, mensaje_champion);
-        mostrarMatriz( 128,mensaje_start);
+        enviar_sonido(3); // SONIDO: Start para el ciclo nuevo
+        mostrarMatriz(128,mensaje_start);
         seleccionar_dificultad();
         generar_secuencia();
         ronda = 1;
       }
     }
     else{
+      enviar_sonido(2); // SONIDO: PERDIÓ EL JUEGO (Game over)
       mostrar_patron(error);
       mostrarMatriz(72,mensaje_gameover);
+      enviar_sonido(3); // SONIDO: Start para reiniciar la interfaz
       ronda=1;
-      mostrarMatriz( 128,mensaje_start);
+      mostrarMatriz(128,mensaje_start);
       seleccionar_dificultad();
       generar_secuencia();
-      
     }
     _delay_ms(400);
   }
 }
+
 
 
 
