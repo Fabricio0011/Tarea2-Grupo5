@@ -101,6 +101,7 @@ uint8_t respuesta[6];
 uint8_t ronda = 1;
 uint8_t dificultad = 1;
 uint16_t velocidad = 700;
+uint8_t duracion_flecha = 25; // Variable global para cambiar el tiempo de la flecha en pantalla
 
 // Función para enviar los comandos binarios por PC4 y PC5
 void enviar_sonido(uint8_t comando) {
@@ -154,8 +155,9 @@ void seleccionar_dificultad(){
         if(!(PINC & (1<<PC0))){
             srand(TCNT0);
             dificultad = 1;
-            velocidad = 200;
-            enviar_sonido(1); // SONIDO: Click al seleccionar dificultad
+            velocidad = 300;       // Pausa entre flechas más larga
+            duracion_flecha = 45;  // FACIL: La flecha se queda bastante tiempo en pantalla
+            enviar_sonido(1); 
             mostrarMatriz(48,mensaje_facil);
             while(!(PINC & (1<<PC0)));
             break;
@@ -163,8 +165,9 @@ void seleccionar_dificultad(){
         if(!(PINC & (1<<PC1))){
             srand(TCNT0);
             dificultad = 2;
-            velocidad = 100;
-            enviar_sonido(1); // SONIDO: Click al seleccionar dificultad
+            velocidad = 150;       // Pausa intermedia
+            duracion_flecha = 25;  // MEDIO: Velocidad estándar balanceada
+            enviar_sonido(1); 
             mostrarMatriz(48,mensaje_medio);
             while(!(PINC & (1<<PC1)));
             break;
@@ -172,8 +175,9 @@ void seleccionar_dificultad(){
         if(!(PINC & (1<<PC3))){
             srand(TCNT0);
             dificultad = 3;
-            velocidad = 50;
-            enviar_sonido(1); // SONIDO: Click al seleccionar dificultad
+            velocidad = 70;        // Pausa muy rápida para encadenar secuencias
+            duracion_flecha = 12;  // DIFICIL: La flecha parpadea y desaparece volando
+            enviar_sonido(1); 
             mostrarMatriz(64,mensaje_dificil);
             while(!(PINC & (1<<PC3)));
             break;
@@ -181,8 +185,9 @@ void seleccionar_dificultad(){
     }
 }
 
+// Modificada para usar la variable adaptativa duracion_flecha
 void mostrar_patron(unsigned char patron[8]){
-    for(int z=0; z<25; z++){
+    for(int z=0; z<duracion_flecha; z++){
         for(int fila=0; fila<8; fila++){
             PORTD = posicion[fila];
             PORTB = patron[fila];
@@ -236,7 +241,7 @@ int main(){
       if(!(PINC & (1<<PC0))){
         respuesta[indice] = ARRIBA;
         indice++;
-        enviar_sonido(1); // SONIDO: Click al ingresar el botón
+        enviar_sonido(1); 
         mostrar_patron(flecha_arriba);
         while(!(PINC & (1<<PC0)));
         _delay_ms(100);
@@ -244,7 +249,7 @@ int main(){
       else if(!(PINC & (1<<PC1))){
         respuesta[indice] = ABAJO;
         indice++;
-        enviar_sonido(1); // SONIDO: Click al ingresar el botón
+        enviar_sonido(1); 
         mostrar_patron(flecha_abajo);
         while(!(PINC & (1<<PC1)));
         _delay_ms(100);
@@ -252,7 +257,7 @@ int main(){
       else if(!(PINC & (1<<PC2))){
         respuesta[indice] = IZQUIERDA;
         indice++;
-        enviar_sonido(1); // SONIDO: Click al ingresar el botón
+        enviar_sonido(1); 
         mostrar_patron(flecha_izquierda);
         while(!(PINC & (1<<PC2)));
         _delay_ms(100);
@@ -260,7 +265,7 @@ int main(){
       else if(!(PINC & (1<<PC3))){
         respuesta[indice] = DERECHA;
         indice++;
-        enviar_sonido(1); // SONIDO: Click al ingresar el botón
+        enviar_sonido(1); 
         mostrar_patron(flecha_derecha);        
         while(!(PINC & (1<<PC3)));
         _delay_ms(100);
@@ -295,7 +300,6 @@ int main(){
     _delay_ms(400);
   }
 }
-
 
 
 
